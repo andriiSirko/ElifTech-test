@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>ElifTech Test Assignment</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+</head>
+<body>
+    <h2>List of Companies</h2>
+    <form name="compForm">
+        <input type="hidden" name="id" value="0" />
+        <div class="form-group">
+            <label for="name">Name:</label>
+            <input class="form-control" name="name" />
+        </div>
+        <div class="form-group">
+            <label for="earn">Company Earnings:</label>
+            <input class="form-control" name="earn" />
+        </div>
+        <div class="panel-body">
+           <button onclick="GetComps()" class="btn btn-sm btn-primary">View</button>
+           <button onclick="CreateComp(compName, compEarn)" class="btn btn-sm btn-primary">Add</button>
+           <a id="reset" class="btn btn-sm btn-primary">Reset</a> 
+            <!-- кнопка перегляду, комент GetComps  type="submit"-->
+            
+        </div>
+    </form>
+    <!-- create table -->
+    <table class="table table-condensed table-striped table-bordered">
+        <thead><tr><th>Id</th><th>Name</th><th>Company Earnings</th><th></th></tr></thead>
+        <tbody>
+        </tbody>
+    </table>
+  
+    <script>
+        // Get all companies
+       
+        function GetComps() {
+            $.ajax({
+                url: "/api/comps",
+                type: "GET",
+                contentType: "application/json",
+                success: function (comps) {
+                    var rows = "";
+                    $.each(comps, function (index, comp) {
+                        // добавляем полученные элементы в таблицу
+                        rows += row(comp);
+                    })
+                    $("table tbody").append(rows);
+                 }
+            });
+        }
+        // get one company
+        function GetComp(id) {
+            $.ajax({
+                url: "/api/comps/"+id,
+                type: "GET",
+                contentType: "application/json",
+                success: function (comp) {
+                    var form = document.forms["compForm"];
+                    form.elements["id"].value = comp._id;
+                    form.elements["name"].value = comp.name;
+                    form.elements["earn"].value = comp.earn;
+                }
+            });
+        }
+        // func adding
+        function CreateComp(compName, compEarn) {
+            $.ajax({
+                url: "api/comps",
+                contentType: "application/json",
+                method: "POST",
+                data: JSON.stringify({
+                    name: compName,
+                    earn: compEarn
+                }),
+                success: function (comp) {
+                    reset();
+                    $("table tbody").append(row(comp));
+                }
+            })
+        }
+        // Edit company func
+        function EditComp(compId, compName, compEarn) {
+            $.ajax({
+                url: "api/comps",
+                contentType: "application/json",
+                method: "PUT",
+                data: JSON.stringify({
+                    id: compId,
+                    name: compName,
+                    earn: compEarn
+                }),
+                success: function (comp) {
+                    reset();
+                    console.log(comp);
+                    $("tr[data-rowid='" + comp._id + "']").replaceWith(row(comp));
+                }
+            })
+        }
+  
+        // form reset
+        function reset() {
+            var form = document.forms["compForm"];
+            form.reset();
+            form.elements["id"].value = 0;
+        }
+  
+        // func delete by id
+        function DeleteComp(id) {
+            $.ajax({
+                url: "api/comps/"+id,
+                contentType: "application/json",
+                method: "DELETE",
+                success: function (comp) {
+                    console.log(comp);
+                    $("tr[data-rowid='" + comp._id + "']").remove();
+                }
+            })
+        }
+        // create table string
+        var row = function (comp) {
+            return "<tr data-rowid='" + comp._id + "'><td>" + comp._id + "</td>" +
+                   "<td>" + comp.name + "</td> <td>" + comp.earn + "</td>" +
+                   "<td><a class='editLink' data-id='" + comp._id + "'>Изменить</a> | " +
+                    "<a class='removeLink' data-id='" + comp._id + "'>Удалить</a></td></tr>";
+        }
+        // Reset of form values
+        $("#reset").click(function (e) {
+  
+            e.preventDefault();
+            reset();
+        })
+  
+        // Sending form
+        $("form").submit(function (e) {
+            e.preventDefault();
+            var id = this.elements["id"].value;
+            var name = this.elements["name"].value;
+            var earn = this.elements["earn"].value;
+            if (id == 0)
+                CreateComp(name, earn);
+            else
+                EditComp(id, name, earn);
+        });
+  
+        // Edite button
+        $("body").on("click", ".editLink", function () {
+            var id = $(this).data("id");
+            GetComp(id);
+        })
+        // Delete button 
+        $("body").on("click", ".removeLink", function () {
+            var id = $(this).data("id");
+            DeleteComp(id);
+        })
+  
+    </script>
+</body>
+</html>
